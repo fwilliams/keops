@@ -15,7 +15,7 @@ class GenredAutograd(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(ctx, formula, aliases, backend, dtype, device_id, ranges, accuracy_flags, *args):
+    def forward(ctx, formula, aliases, backend, dtype, device_id, ranges, accuracy_flags, out, *args):
     
         optional_flags = ['-D_GLIBCXX_USE_CXX11_ABI=' + str(int(torch_cxx11_abi_flag)), '-DPYTORCH_INCLUDE_DIR=' + ';'.join(include_dirs)] + accuracy_flags
 
@@ -41,13 +41,13 @@ class GenredAutograd(torch.autograd.Function):
         
         if ranges is None : ranges = () # To keep the same type
 
-        result = myconv.genred_pytorch(tagCPUGPU, tag1D2D, tagHostDevice, device_id, ranges, *args)
+        out = myconv.genred_pytorch(tagCPUGPU, tag1D2D, tagHostDevice, device_id, ranges, out, *args)
 
         # relying on the 'ctx.saved_variables' attribute is necessary  if you want to be able to differentiate the output
         #  of the backward once again. It helps pytorch to keep track of 'who is who'.
-        ctx.save_for_backward(*args, result)
+        ctx.save_for_backward(*args, out)
 
-        return result
+        return out
 
     @staticmethod
     def backward(ctx, G):
@@ -268,7 +268,7 @@ class Genred():
         self.axis = axis
         self.opt_arg = opt_arg
 
-    def __call__(self, *args, backend='auto', device_id=-1, ranges=None):
+    def __call__(self, *args, out=None, backend='auto', device_id=-1, ranges=None):
         r"""
         To apply the routine on arbitrary torch Tensors.
 
@@ -392,8 +392,10 @@ class Genred():
         if self.dtype in ('float16','half'):
             args, ranges, tag_dummy, N = preprocess_half2(args, self.aliases, self.axis, ranges, nx, ny)
         
-        out = GenredAutograd.apply(self.formula, self.aliases, backend, self.dtype, 
-                                   device_id, ranges, self.accuracy_flags, *args)
+        if out is None:
+            raise RuntimeError("Out must be non-null to work")
+        GenredAutograd.apply(self.formula, self.aliases, backend, self.dtype, 
+                                   device_id, ranges, self.accuracy_flags, out, *args)
 
         if self.dtype in ('float16','half'):
             out = postprocess_half2(out, tag_dummy, self.reduction_op, N)
