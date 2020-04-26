@@ -75,30 +75,32 @@ at::Tensor allocate_result_array_gpu< at::Tensor, __TYPE__ >(int* shape_out, int
 #endif
 }
 
-template <>
-__INDEX__ *get_rangedata(at::Tensor obj_ptri) {
-  return obj_ptri.data_ptr< __INDEX__ >();
-}
+    template <>
+    __INDEX__ *get_rangedata(at::Tensor obj_ptri) {
+      return obj_ptri.data_ptr< __INDEX__ >();
+    }
 
-void keops_error(std::basic_string< char > msg) {
-  throw std::runtime_error(msg);
-}
+    void keops_error(std::basic_string< char > msg) {
+      throw std::runtime_error(msg);
+    }
 
 /////////////////////////////////////////////////////////////////////////////////
 //                    PyBind11 entry point                                     //
 /////////////////////////////////////////////////////////////////////////////////
+    PYBIND11_MODULE(VALUE_OF(MODULE_NAME), m) {
+        m.doc() = "pyKeOps: KeOps for pytorch through pybind11 (pytorch flavour).";
 
+        m.def("genred_pytorch",
+              &generic_red <at::Tensor, at::Tensor>,
+              "Entry point to keops - pytorch version.");
+        m.def("genred_pytorch",
+              &generic_red_out <at::Tensor, at::Tensor>,
+              "Entry point to keops - pytorch version.");
 
-PYBIND11_MODULE(VALUE_OF(MODULE_NAME), m) {
-m.doc() = "pyKeOps: KeOps for pytorch through pybind11 (pytorch flavour).";
-
-m.def("genred_pytorch", &generic_red <at::Tensor, at::Tensor>, "Entry point to keops - pytorch version.");
-
-m.attr("tagIJ") = keops::TAGIJ;
-m.attr("dimout") = keops::DIMOUT;
-m.attr("formula") = keops::f;
-m.attr("compiled_formula") = xstr(keops::FORMULA_OBJ_STR);
-m.attr("compiled_aliases") = xstr(keops::VAR_ALIASES_STR);
-}
-
+        m.attr("tagIJ") = keops::TAGIJ;
+        m.attr("dimout") = keops::DIMOUT;
+        m.attr("formula") = keops::f;
+        m.attr("compiled_formula") = xstr(keops::FORMULA_OBJ_STR);
+        m.attr("compiled_aliases") = xstr(keops::VAR_ALIASES_STR);
+    }
 }

@@ -9,6 +9,7 @@ from pykeops.common.parse_type import parse_aliases, get_accuracy_flags
 from pykeops.common.utils import axis2cat
 from pykeops.torch import default_dtype, include_dirs, torch_cxx11_abi_flag
 
+
 class GenredAutograd(torch.autograd.Function):
     """
     This class is the entry point to pytorch auto grad engine.
@@ -17,7 +18,10 @@ class GenredAutograd(torch.autograd.Function):
     @staticmethod
     def forward(ctx, formula, aliases, backend, dtype, device_id, ranges, accuracy_flags, out, *args):
     
-        optional_flags = ['-D_GLIBCXX_USE_CXX11_ABI=' + str(int(torch_cxx11_abi_flag)), '-DPYTORCH_INCLUDE_DIR=' + ';'.join(include_dirs)] + accuracy_flags
+        optional_flags = [
+            '-D_GLIBCXX_USE_CXX11_ABI=' + str(int(torch_cxx11_abi_flag)),
+            '-DPYTORCH_INCLUDE_DIR=' + ';'.join(include_dirs)
+        ] + accuracy_flags
 
         myconv = LoadKeOps(formula, aliases, dtype, 'torch', optional_flags).import_module()
 
@@ -35,16 +39,23 @@ class GenredAutograd(torch.autograd.Function):
 
         if tagCPUGPU==1 & tagHostDevice==1:
             device_id = args[0].device.index
-            for i in range(1,len(args)):
+            for i in range(1, len(args)):
                 if args[i].device.index != device_id:
                     raise ValueError("[KeOps] Input arrays must be all located on the same device.")
+            if out is not None and out.device.index != device_id:
+                raise ValueError("[KeOps] Input and output arrays must be located on the same device.")
         
-        if ranges is None : ranges = () # To keep the same type
+        if ranges is None:
+            ranges = () # To keep the same type
 
-        out = myconv.genred_pytorch(tagCPUGPU, tag1D2D, tagHostDevice, device_id, ranges, out, *args)
-
-        # relying on the 'ctx.saved_variables' attribute is necessary  if you want to be able to differentiate the output
-        #  of the backward once again. It helps pytorch to keep track of 'who is who'.
+        if out is None:
+            out = myconv.genred_pytorch(tagCPUGPU, tag1D2D, tagHostDevice, device_id, ranges, *args)
+        else:
+            out = myconv.genred_pytorch(tagCPUGPU, tag1D2D, tagHostDevice, device_id, ranges, out, *args)
+        
+        # relying on the 'ctx.saved_variables' attribute is necessary
+        # if you want to be able to differentiate the output of the backward once again.
+        # It helps pytorch to keep track of 'who is who'.
         ctx.save_for_backward(*args, out)
 
         return out
@@ -89,7 +100,7 @@ class GenredAutograd(torch.autograd.Function):
 
         for (var_ind, (sig, arg_ind)) in enumerate(zip(aliases, args)):  # Run through the arguments
             # If the current gradient is to be discarded immediatly...
-            if not ctx.needs_input_grad[var_ind + 7]:  # because of (formula, aliases, backend, dtype, device_id, ranges, accuracy_flags)
+            if not ctx.needs_input_grad[var_ind + 8]:  # because of (formula, aliases, backend, dtype, device_id, ranges, accuracy_flags, out)
                 grads.append(None)  # Don't waste time computing it.
 
             else:  # Otherwise, the current gradient is really needed by the user:
@@ -110,7 +121,7 @@ class GenredAutograd(torch.autograd.Function):
                 if cat == 2:  # we're referring to a parameter, so we'll have to sum both wrt 'i' and 'j'
                     # WARNING !! : here we rely on the implementation of DiffT in files in folder keops/core/formulas/reductions
                     # if tagI==cat of V is 2, then reduction is done wrt j, so we need to further sum output wrt i
-                    grad = genconv(formula_g, aliases_g, backend, dtype, device_id, ranges, accuracy_flags, *args_g)
+                    grad = genconv(formula_g, aliases_g, backend, dtype, device_id, ranges, accuracy_flags, None, *args_g)
                     # Then, sum 'grad' wrt 'i' :
                     # I think that '.sum''s backward introduces non-contiguous arrays,
                     # and is thus non-compatible with GenredAutograd: grad = grad.sum(0)
@@ -122,7 +133,7 @@ class GenredAutograd(torch.autograd.Function):
                         i for (i, (x, y)) in enumerate(zip(arg_ind.shape[:-1], grad.shape[:-1])) if x < y)
 
                 else:
-                    grad = genconv(formula_g, aliases_g, backend, dtype, device_id, ranges, accuracy_flags, *args_g)
+                    grad = genconv(formula_g, aliases_g, backend, dtype, device_id, ranges, accuracy_flags, None, *args_g)
 
                     # N.B.: 'grad' is always a full [A, .., B, M, D] or [A, .., B, N, D] or [A, .., B, D] tensor,
                     #       whereas 'arg_ind' may have some broadcasted batched dimensions.
@@ -137,8 +148,8 @@ class GenredAutograd(torch.autograd.Function):
                 grad = grad.reshape(arg_ind.shape)  # The gradient should have the same shape as the input!
                 grads.append(grad)
         
-        # Grads wrt. formula, aliases, backend, dtype, device_id, ranges, *args
-        return (None, None, None, None, None, None, None, *grads)
+        # Grads wrt. formula, aliases, backend, dtype, device_id, ranges, accuracy_flags, out, *args
+        return (None, None, None, None, None, None, None, None, *grads)
 
 
 class Genred():
@@ -391,10 +402,8 @@ class Genred():
 
         if self.dtype in ('float16','half'):
             args, ranges, tag_dummy, N = preprocess_half2(args, self.aliases, self.axis, ranges, nx, ny)
-        
-        if out is None:
-            raise RuntimeError("Out must be non-null to work")
-        GenredAutograd.apply(self.formula, self.aliases, backend, self.dtype, 
+
+        out = GenredAutograd.apply(self.formula, self.aliases, backend, self.dtype,
                                    device_id, ranges, self.accuracy_flags, out, *args)
 
         if self.dtype in ('float16','half'):

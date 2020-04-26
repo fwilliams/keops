@@ -35,7 +35,7 @@ class PytorchUnitTestCase(unittest.TestCase):
     L = np.random.rand(A, 1, M, 1)
     Y = np.random.rand(1, B, N, D)
     S = np.random.rand(A, B, 1) + 1
-    
+
     try:
         import torch
         
@@ -80,7 +80,11 @@ class PytorchUnitTestCase(unittest.TestCase):
     except:
         print('Pytorch could not be loaded. Skip tests.')
         pass
-    
+
+    @classmethod
+    def setUpClass(cls):
+        pass # TODO: Clear keops cache
+
     ############################################################
     def test_conv_kernels_feature(self):
     ############################################################
@@ -136,7 +140,7 @@ class PytorchUnitTestCase(unittest.TestCase):
                 gamma_py = 2 * (np.sum(self.a * (np.matmul(A, self.b)), axis=2)).T
                 
                 # compare output
-                self.assertTrue(np.allclose(gamma_keops.cpu().data.numpy(), gamma_py, atol=1e-6))
+                np.testing.assert_allclose(gamma_keops.cpu().data.numpy(), gamma_py, atol=1e-6)
     
     ############################################################
     def test_generic_syntax_float(self):
@@ -555,7 +559,6 @@ class PytorchUnitTestCase(unittest.TestCase):
         grad_keops = torch.autograd.grad(sum_f_keops, y, e.reshape(self.M, -1))[0]
         grad_torch = torch.autograd.grad(sum_f_torch2, y, e)[0]
         self.assertTrue(torch.allclose(grad_keops.flatten(), grad_torch.flatten(), rtol=1e-4))
-
 
 
 if __name__ == '__main__':

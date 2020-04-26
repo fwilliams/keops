@@ -139,16 +139,15 @@ array_t_out launch_keops_out(int tag1D2D,
                              int deviceId,
                              int nargs,
                              array_t* args,
-			     array_t_out result,
+			                 array_t_out result,
                              int nranges = 0,
                              index_t* ranges = {}) {
-  
   keops_binders::check_tag(tag1D2D, "1D2D");
   keops_binders::check_tag(tagCpuGpu, "CpuGpu");
   keops_binders::check_tag(tagHostDevice, "HostDevice");
   
   keops_binders::check_nargs(nargs);
-  short int deviceId_casted = cast_Device_Id(deviceId);
+  //short int deviceId_casted = cast_Device_Id(deviceId);
   
   Sizes< array_t > SS(nargs, args);
 
