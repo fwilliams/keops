@@ -187,13 +187,14 @@ os.makedirs(save_folder, exist_ok=True)
 
 fig = go.Figure(data=[go.Mesh3d(x=xt, y=yt, z=zt, i=it, j=jt, k=kt, color='blue', opacity=0.50),
                       go.Mesh3d(x=x, y=y, z=z, i=i, j=j, k=k, color='red', opacity=0.50)])
-fig.write_html( save_folder + "data.html", auto_open=False)
+fig.write_html(save_folder + 'data.html', auto_open=False)
+# sphinx_gallery_thumbnail_path = '_static/plot_LDDMM_Surface_thumb.png'
 
 
 ############################################################################
 # .. raw:: html
 #
-#     <iframe src="../../_images/data.html" height="300px" width="100%"></iframe>
+#     <iframe src="../../_images/data.html" height="700px" width="100%"></iframe>
 #
 
 
@@ -237,7 +238,7 @@ listpq = Shooting(p0, q0, Kv, nt=nt)
 ############################################################################
 # .. raw:: html
 #
-#     <iframe src="../../_images/results.html" height="300px" width="100%"></iframe>
+#     <iframe src="../../_images/results.html" height="700px" width="100%"></iframe>
 #
 
 
