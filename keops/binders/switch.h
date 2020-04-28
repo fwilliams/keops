@@ -147,7 +147,9 @@ array_t_out launch_keops_out(int tag1D2D,
   keops_binders::check_tag(tagHostDevice, "HostDevice");
   
   keops_binders::check_nargs(nargs);
-  //short int deviceId_casted = cast_Device_Id(deviceId);
+#if USE_CUDA
+  short int deviceId_casted = cast_Device_Id(deviceId);
+#endif
   
   Sizes< array_t > SS(nargs, args);
 
