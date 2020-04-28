@@ -46,12 +46,13 @@ class GenredAutograd(torch.autograd.Function):
                 raise ValueError("[KeOps] Input and output arrays must be located on the same device.")
         
         if ranges is None:
-            ranges = () # To keep the same type
+            ranges = ()  # To keep the same type
 
         if out is None:
             out = myconv.genred_pytorch(tagCPUGPU, tag1D2D, tagHostDevice, device_id, ranges, *args)
         else:
-            out = myconv.genred_pytorch(tagCPUGPU, tag1D2D, tagHostDevice, device_id, ranges, out, *args)
+            out = myconv.genred_pytorch_out(tagCPUGPU, tag1D2D, tagHostDevice, device_id, ranges,
+                                            out, *args)
         
         # relying on the 'ctx.saved_variables' attribute is necessary
         # if you want to be able to differentiate the output of the backward once again.

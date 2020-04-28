@@ -93,7 +93,7 @@ at::Tensor allocate_result_array_gpu< at::Tensor, __TYPE__ >(int* shape_out, int
         m.def("genred_pytorch",
               &generic_red <at::Tensor, at::Tensor>,
               "Entry point to keops - pytorch version.");
-        m.def("genred_pytorch",
+        m.def("genred_pytorch_out",
               &generic_red_out <at::Tensor, at::Tensor>,
               "Entry point to keops - pytorch version.");
 

@@ -252,8 +252,8 @@ class Genred():
 
         # Get tags
         tagCpuGpu, tag1D2D, _ = get_tag_backend(backend, args)
-        if ranges is None :
-            ranges = () # To keep the same type
+        if ranges is None:
+            ranges = ()  # To keep the same type
 
         nx, ny = get_sizes(self.aliases, *args)
         nout, nred = (nx, ny) if self.axis==1 else (ny, nx)
