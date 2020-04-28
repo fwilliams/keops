@@ -79,11 +79,10 @@ class PytorchUnitTestCase(unittest.TestCase):
         print('Running Pytorch tests.')
     except:
         print('Pytorch could not be loaded. Skip tests.')
-        pass
 
     @classmethod
     def setUpClass(cls):
-        pass # TODO: Clear keops cache
+        pykeops.clean_pykeops()
 
     ############################################################
     def test_conv_kernels_feature(self):
