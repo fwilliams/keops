@@ -1,6 +1,7 @@
-// Import done by Cmake
+// Keops and torch import done by Cmake
 // #include <torch/extension.h>
-// #include <pybind11/pybind11.h>
+
+#include <pybind11/pybind11.h>
 
 // keops_binders import
 #include "keops/binders/include.h"
@@ -83,24 +84,25 @@ at::Tensor allocate_result_array_gpu< at::Tensor, __TYPE__ >(int* shape_out, int
     void keops_error(std::basic_string< char > msg) {
       throw std::runtime_error(msg);
     }
+}
 
 /////////////////////////////////////////////////////////////////////////////////
 //                    PyBind11 entry point                                     //
 /////////////////////////////////////////////////////////////////////////////////
-    PYBIND11_MODULE(VALUE_OF(MODULE_NAME), m) {
-        m.doc() = "pyKeOps: KeOps for pytorch through pybind11 (pytorch flavour).";
+PYBIND11_MODULE(VALUE_OF(MODULE_NAME), m) {
+    m.doc() = "pyKeOps: KeOps for pytorch through pybind11 (pytorch flavour).";
 
-        m.def("genred_pytorch",
-              &generic_red <at::Tensor, at::Tensor>,
-              "Entry point to keops - pytorch version.");
-        m.def("genred_pytorch_out",
-              &generic_red_out <at::Tensor, at::Tensor>,
-              "Entry point to keops - pytorch version.");
+    m.def("genred_pytorch",
+          &generic_red <at::Tensor, at::Tensor>,
+          "Entry point to keops - pytorch version.");
+    m.def("genred_pytorch_out",
+          &generic_red_out <at::Tensor, at::Tensor>,
+          "Entry point to keops - pytorch version.");
 
-        m.attr("tagIJ") = keops::TAGIJ;
-        m.attr("dimout") = keops::DIMOUT;
-        m.attr("formula") = keops::f;
-        m.attr("compiled_formula") = xstr(keops::FORMULA_OBJ_STR);
-        m.attr("compiled_aliases") = xstr(keops::VAR_ALIASES_STR);
-    }
+    m.attr("tagIJ") = keops::TAGIJ;
+    m.attr("dimout") = keops::DIMOUT;
+    m.attr("formula") = keops::f;
+    m.attr("compiled_formula") = xstr(keops::FORMULA_OBJ_STR);
+    m.attr("compiled_aliases") = xstr(keops::VAR_ALIASES_STR);
 }
+
