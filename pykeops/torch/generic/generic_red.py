@@ -34,7 +34,7 @@ class GenredAutograd(torch.autograd.Function):
 
         tagCPUGPU, tag1D2D, tagHostDevice = get_tag_backend(backend, args)
 
-        if tagCPUGPU==1 & tagHostDevice==1:
+        if tagCPUGPU == 1 & tagHostDevice == 1:
             device_id = args[0].device.index
             for i in range(1, len(args)):
                 if args[i].device.index != device_id:
