@@ -152,7 +152,7 @@ array_t_out launch_keops_out(int tag1D2D,
 #endif
   
   Sizes< array_t > SS(nargs, args);
-
+  // We do not want to allocate the output array here. Only difference to `launch_keops`
   //array_t_out result = (tagHostDevice == 0) ? allocate_result_array< array_t_out, __TYPE__ >(SS.shape_out, SS.nbatchdims)
   //                                          : allocate_result_array_gpu< array_t_out, __TYPE__ >(SS.shape_out, SS.nbatchdims, deviceId_casted);
   __TYPE__* result_ptr = get_data< array_t_out, __TYPE__ >(result);
