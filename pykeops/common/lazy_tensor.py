@@ -959,7 +959,16 @@ class LazyTensor:
         the element-wise sine of ``x``.
         """
         return self.unary("Sin")
-    
+
+    def acos(self):
+        r"""
+        Element-wise arccosine - a unary operation.
+
+        ``x.acos()`` returns a :class:`LazyTensor` that encodes, symbolically,
+        the element-wise arccosine of ``x``.
+        """
+        return self.unary("Acos")
+
     def sqrt(self):
         r"""
         Element-wise square root - a unary operation.
