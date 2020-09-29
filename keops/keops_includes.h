@@ -45,6 +45,7 @@
 #include "core/formulas/maths/TensorProd.h"
 #include "core/formulas/maths/VecMatMult.h"
 #include "core/formulas/maths/OneHot.h"
+#include "core/formulas/maths/Clamp11.h"
 
 
 // import all operations on vector implementations
