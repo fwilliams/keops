@@ -2,7 +2,7 @@ import re
 import numpy as np
 from collections import OrderedDict
 import pykeops
-
+import pykeops.config
 
 ############################################################
 #     define backend
@@ -45,7 +45,7 @@ class SetBackend():
 
         # auto : infer everything
         if backend == 'auto':
-            return int(pykeops.gpu_available), self._find_grid(), self._find_mem(variables, output)
+            return int(pykeops.config.gpu_available), self._find_grid(), self._find_mem(variables, output)
 
         split_backend = re.split('_',backend)
         if len(split_backend) == 1:     # CPU or GPU
@@ -61,7 +61,7 @@ class SetBackend():
 
     @staticmethod
     def _find_dev():
-        return int(pykeops.gpu_available)
+        return int(pykeops.config.gpu_available)
 
     @staticmethod
     def _find_mem(variables, output):
@@ -71,7 +71,7 @@ class SetBackend():
         # Infer if numpy arrays or torch tensors
         if all([type(var) is np.ndarray for var in variables]):
             MemType = 0
-        elif pykeops.torch_found: 
+        elif pykeops.config.torch_found:
             import torch
 
             if all([type(var) in {torch.Tensor, torch.nn.parameter.Parameter} for var in variables]):

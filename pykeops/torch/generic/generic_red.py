@@ -5,7 +5,7 @@ from pykeops.common.keops_io import LoadKeOps
 from pykeops.common.operations import preprocess, postprocess
 from pykeops.torch.half2_convert import preprocess_half2, postprocess_half2
 from pykeops.common.parse_type import get_type, get_sizes, complete_aliases
-from pykeops.common.parse_type import get_accuracy_flags
+from pykeops.common.parse_type import get_optional_flags
 from pykeops.common.utils import axis2cat
 from pykeops.torch import default_dtype, include_dirs
 
@@ -16,11 +16,8 @@ class GenredAutograd(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(ctx, formula, aliases, backend, dtype, device_id, ranges, accuracy_flags, out, *args):
-
-        optional_flags = include_dirs + accuracy_flags
-
-        myconv = LoadKeOps(formula, aliases, dtype, 'torch', optional_flags).import_module()
+    def forward(ctx, formula, aliases, backend, dtype, device_id, ranges, optional_flags, out, *args):
+        myconv = LoadKeOps(formula, aliases, dtype, 'torch', optional_flags+include_dirs).import_module()
 
         # Context variables: save everything to compute the gradient:
         ctx.formula = formula
@@ -29,7 +26,7 @@ class GenredAutograd(torch.autograd.Function):
         ctx.dtype = dtype
         ctx.device_id = device_id
         ctx.ranges = ranges
-        ctx.accuracy_flags = accuracy_flags
+        ctx.optional_flags = optional_flags
         ctx.myconv = myconv
 
         tagCPUGPU, tag1D2D, tagHostDevice = get_tag_backend(backend, args)
@@ -44,7 +41,8 @@ class GenredAutograd(torch.autograd.Function):
 
         if ranges is None:
             ranges = ()  # To keep the same type
-
+        # N.B.: KeOps C++ expects contiguous integer arrays as ranges
+        ranges = tuple(r.contiguous() for r in ranges)
         if out is None:
             out = myconv.genred_pytorch(tagCPUGPU, tag1D2D, tagHostDevice, device_id, ranges, *args)
         else:
@@ -65,7 +63,7 @@ class GenredAutograd(torch.autograd.Function):
         backend = ctx.backend
         dtype = ctx.dtype
         ranges = ctx.ranges
-        accuracy_flags = ctx.accuracy_flags
+        optional_flags = ctx.optional_flags
         device_id = ctx.device_id
         myconv = ctx.myconv
         args = ctx.saved_tensors[:-1]  # Unwrap the saved variables
@@ -187,7 +185,7 @@ class Genred():
         """
 
     def __init__(self, formula, aliases, reduction_op='Sum', axis=0, dtype=default_dtype, opt_arg=None,
-                 formula2=None, cuda_type=None, dtype_acc="auto", use_double_acc=False, sum_scheme="auto"):
+                 formula2=None, cuda_type=None, dtype_acc="auto", use_double_acc=False, sum_scheme="auto", enable_chunks=True, optional_flags=[]):
         r"""
         Instantiate a new generic operation.
 
@@ -258,14 +256,17 @@ class Genred():
                   - **sum_scheme** =  ``"kahan_scheme"``: use Kahan summation algorithm to compensate for round-off errors. This improves
                 accuracy for large sized data.
 
+            enable_chunks (bool, default True): enable automatic selection of special "chunked" computation mode for accelerating reductions
+				with formulas involving large dimension variables.
+
+            optional_flags (list, default []): further optional flags passed to the compiler, in the form ['-D...=...','-D...=...']
         """
         if cuda_type:
             # cuda_type is just old keyword for dtype, so this is just a trick to keep backward compatibility
             dtype = cuda_type
         self.reduction_op = reduction_op
         reduction_op_internal, formula2 = preprocess(reduction_op, formula2)
-
-        self.accuracy_flags = get_accuracy_flags(dtype_acc, use_double_acc, sum_scheme, dtype, reduction_op_internal)
+        self.optional_flags = optional_flags + get_optional_flags(reduction_op_internal, dtype_acc, use_double_acc, sum_scheme, dtype, enable_chunks)
 
         str_opt_arg = ',' + str(opt_arg) if opt_arg else ''
         str_formula2 = ',' + formula2 if formula2 else ''
@@ -402,7 +403,7 @@ class Genred():
             args, ranges, tag_dummy, N = preprocess_half2(args, self.aliases, self.axis, ranges, nx, ny)
 
         out = GenredAutograd.apply(self.formula, self.aliases, backend, self.dtype,
-                                   device_id, ranges, self.accuracy_flags, out, *args)
+                                   device_id, ranges, self.optional_flags, out, *args)
 
         if self.dtype in ('float16','half'):
             out = postprocess_half2(out, tag_dummy, self.reduction_op, N)
