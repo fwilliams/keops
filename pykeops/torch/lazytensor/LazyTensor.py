@@ -3,7 +3,9 @@ import torch
 from pykeops.common.lazy_tensor import GenericLazyTensor
 from pykeops.torch.utils import torchtools
 
+
 # Convenient aliases:
+
 
 def Var(x_or_ind, dim=None, cat=None):
     if dim is None:
@@ -38,19 +40,19 @@ def Pm(x_or_ind, dim=None):
 class LazyTensor(GenericLazyTensor):
     r"""Symbolic wrapper for PyTorch tensors.
 
-        :class:`LazyTensor` encode numerical arrays through the combination
-        of a symbolic, **mathematical formula** and a list of **small data arrays**.
-        They can be used to implement efficient algorithms on objects
-        that are **easy to define**, but **impossible to store** in memory
-        (e.g. the matrix of pairwise distances between
-        two large point clouds).
+    :class:`LazyTensor` encode numerical arrays through the combination
+    of a symbolic, **mathematical formula** and a list of **small data arrays**.
+    They can be used to implement efficient algorithms on objects
+    that are **easy to define**, but **impossible to store** in memory
+    (e.g. the matrix of pairwise distances between
+    two large point clouds).
 
-        :class:`LazyTensor` may be created from standard NumPy arrays or PyTorch tensors,
-        combined using simple mathematical operations and converted
-        back to NumPy arrays or PyTorch tensors with
-        efficient reduction routines, which outperform
-        standard tensorized implementations by two orders of magnitude.
-        """
+    :class:`LazyTensor` may be created from standard NumPy arrays or PyTorch tensors,
+    combined using simple mathematical operations and converted
+    back to NumPy arrays or PyTorch tensors with
+    efficient reduction routines, which outperform
+    standard tensorized implementations by two orders of magnitude.
+    """
 
     def __init__(self, x=None, axis=None):
         super().__init__(x=x, axis=axis)
@@ -58,14 +60,16 @@ class LazyTensor(GenericLazyTensor):
         # torch specialization
         typex = type(x)
 
-        if typex not in (type(None), tuple, int, float, list, torch.Tensor):
-            raise TypeError("LazyTensors should be built from PyTorch tensors, "
-                              "float/integer numbers, lists of floats or 3-uples of integers. "
-                              "Received: {}".format(typex))
+        if typex not in [type(None), tuple, int, list, torch.Tensor] + self.float_types:
+            raise TypeError(
+                "LazyTensors should be built from PyTorch tensors, "
+                "float/integer numbers, lists of floats or 3-uples of integers. "
+                "Received: {}".format(typex)
+            )
 
         if typex == torch.Tensor and len(x.shape) == 0:  # Torch scalar -> Torch tensor
             x = x.view(1)
-        elif typex == float:
+        elif typex in self.float_types:
             x = torch.Tensor([x]).view(1)
 
         if typex == torch.Tensor:
@@ -78,3 +82,5 @@ class LazyTensor(GenericLazyTensor):
 
     def lt_constructor(self, x=None, axis=None):
         return LazyTensor(x=x, axis=axis)
+
+    float_types = [float]

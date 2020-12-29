@@ -45,7 +45,6 @@ array_t generic_red(
 //////////////////////////////////////////////////////////////
 // Call Cuda codes                                          //
 //////////////////////////////////////////////////////////////
-  
   py::gil_scoped_release release;
   array_t result = keops_binders::launch_keops< array_t, array_t, index_t >
           (tag1D2D,
@@ -57,7 +56,6 @@ array_t generic_red(
            nranges,
            &ranges[0]);
   py::gil_scoped_acquire acquire;
- 
   return result;
 }
 

@@ -1,6 +1,11 @@
 ![logo](./doc/_static/logo/keops_logo.png)
 
-[![Build Status](https://ci.inria.fr/keops/buildStatus/icon?job=keops%2Fmaster)](https://ci.inria.fr/keops/job/keops/job/master/)
+----------------------------------------------------------------------------------
+
+[![Build status](https://ci.inria.fr/keops/buildStatus/icon?job=keops%2Fmaster)](https://ci.inria.fr/keops/job/keops/job/master/)
+[![PyPI version](https://badge.fury.io/py/pykeops.svg)](https://pypi.org/project/pykeops/)
+[![CRAN version](https://www.r-pkg.org/badges/version/rkeops)](https://cran.r-project.org/web/packages/rkeops/index.html)
+
 
 You can visit KeOps official [website](https://www.kernel-operations.io/) for 
 documentation and tutorials.
@@ -130,7 +135,7 @@ an issue report on [GitHub](https://github.com/getkeops/keops/issues).
 ## KeOps, PyKeOps, KeOpsLab
 
 - [Benjamin Charlier](https://imag.umontpellier.fr/~charlier/)
-- [Jean Feydy](https://www.math.ens.fr/~feydy/)
+- [Jean Feydy](https://www.jeanfeydy.com)
 - [Joan Alexis Glaunès](http://helios.mi.parisdescartes.fr/~glaunes/)
 
 ## RKeOps

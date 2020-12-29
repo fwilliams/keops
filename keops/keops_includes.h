@@ -10,7 +10,7 @@
   #define DIM_TRESHOLD_CHUNK 143
 #endif
 #ifndef SPECDIM_USE_CHUNK1
-  #define SPECDIM_USE_CHUNK1 80
+  #define SPECDIM_USE_CHUNK1 -1 // originally 80 but deactivated for release 1.4.2
 #endif
 #ifndef SPECDIM_USE_CHUNK2
   #define SPECDIM_USE_CHUNK2 109
@@ -82,7 +82,11 @@
 #include "core/formulas/maths/Rsqrt.h"
 #include "core/formulas/maths/MatVecMult.h"
 #include "core/formulas/maths/GradMatrix.h"
-#include "core/formulas/maths/TensorDot.h"
+#if ((__CUDACC_VER_MAJOR__ * 1000 + __CUDACC_VER_MINOR__ * 100 + __CUDACC_VER_BUILD__) >= 11100)
+    #include "core/formulas/maths/TensorDotNoTao.h"
+#else
+    #include "core/formulas/maths/TensorDot.h"
+#endif
 #include "core/formulas/maths/TensorProd.h"
 #include "core/formulas/maths/VecMatMult.h"
 #include "core/formulas/maths/OneHot.h"

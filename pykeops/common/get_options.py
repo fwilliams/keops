@@ -8,21 +8,27 @@ import pykeops.config
 #     define backend
 ############################################################
 
-class SetBackend():
+
+class SetBackend:
     """
     This class is  used to centralized the options used in PyKeops.
     """
 
-    dev = OrderedDict([('CPU',0),('GPU',1)])
-    grid = OrderedDict([('1D',0),('2D',1)])
-    memtype = OrderedDict([('host',0), ('device',1)])
+    dev = OrderedDict([("CPU", 0), ("GPU", 1)])
+    grid = OrderedDict([("1D", 0), ("2D", 1)])
+    memtype = OrderedDict([("host", 0), ("device", 1)])
 
-    possible_options_list = ['auto',
-                             'CPU',
-                             'GPU',
-                             'GPU_1D', 'GPU_1D_device', 'GPU_1D_host',
-                             'GPU_2D', 'GPU_2D_device', 'GPU_2D_host'
-                             ]
+    possible_options_list = [
+        "auto",
+        "CPU",
+        "GPU",
+        "GPU_1D",
+        "GPU_1D_device",
+        "GPU_1D_host",
+        "GPU_2D",
+        "GPU_2D_device",
+        "GPU_2D_host",
+    ]
 
     def define_tag_backend(self, backend, variables, output):
         """
@@ -40,20 +46,37 @@ class SetBackend():
         """
 
         # check that the option is valid
-        if (backend not in self.possible_options_list):
-            raise ValueError('Invalid backend. Should be one of ', self.possible_options_list)
+        if backend not in self.possible_options_list:
+            raise ValueError(
+                "Invalid backend. Should be one of ", self.possible_options_list
+            )
 
         # auto : infer everything
         if backend == 'auto':
-            return int(pykeops.config.gpu_available), self._find_grid(), self._find_mem(variables, output)
-
+            return (
+                int(pykeops.config.gpu_available),
+                self._find_grid(),
+                self._find_mem(variables, output),
+            )
         split_backend = re.split('_',backend)
         if len(split_backend) == 1:     # CPU or GPU
-            return self.dev[split_backend[0]], self._find_grid(), self._find_mem(variables, output)
+            return (
+                self.dev[split_backend[0]],
+                self._find_grid(),
+                self._find_mem(variables, output),
+            )
         elif len(split_backend) == 2:   # GPU_1D or GPU_2D
-            return self.dev[split_backend[0]], self.grid[split_backend[1]], self._find_mem(variables, output)
+            return (
+                self.dev[split_backend[0]],
+                self.grid[split_backend[1]],
+                self._find_mem(variables, output),
+            )
         elif len(split_backend) == 3:   # the option is known
-            return self.dev[split_backend[0]], self.grid[split_backend[1]], self.memtype[split_backend[2]]
+            return (
+                self.dev[split_backend[0]],
+                self.grid[split_backend[1]],
+                self.memtype[split_backend[2]],
+            )
 
     def define_backend(self, backend, variables, output):
         tagCPUGPU, tag1D2D, tagHostDevice = self.define_tag_backend(backend, variables, output)
@@ -83,9 +106,10 @@ class SetBackend():
                     MemType = 0
                 else:
                     raise ValueError('At least two variables have different memory locations (Cpu/Gpu).')
+            else:
+                raise TypeError("All variables should either be numpy arrays or torch tensors.")
         else:
-            raise TypeError('All variables should either be numpy arrays or torch tensors.')
-
+            raise TypeError("All variables should either be numpy arrays or torch tensors.")
         return MemType
 
     @staticmethod

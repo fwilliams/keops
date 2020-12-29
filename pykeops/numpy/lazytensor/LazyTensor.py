@@ -5,6 +5,7 @@ from pykeops.numpy.utils import numpytools
 
 # Convenient aliases:
 
+
 def Var(x_or_ind, dim=None, cat=None):
     if dim is None:
         # init via data: we assume x_or_ind is data
@@ -58,12 +59,17 @@ class LazyTensor(GenericLazyTensor):
         # numpy specialization
         typex = type(x)
 
-        if typex not in (type(None), tuple, int, float, list, np.ndarray, np.float16, np.float32, np.float64):
-            raise TypeError("LazyTensors should be built from NumPy arrays, "
-                            "float/integer numbers, lists of floats or 3-uples of "
-                            "integers. Received: {}".format(typex))
+        if (
+            typex
+            not in [type(None), tuple, int, float, list, np.ndarray] + self.float_types
+        ):
+            raise TypeError(
+                "LazyTensors should be built from NumPy arrays, "
+                "float/integer numbers, lists of floats or 3-uples of "
+                "integers. Received: {}".format(typex)
+            )
 
-        if typex in (float, np.float16, np.float32, np.float64):  # NumPy scalar -> NumPy array
+        if typex in self.float_types:  # NumPy scalar -> NumPy array
             x = np.array(x).reshape(1)
 
         if typex == np.ndarray:
@@ -76,3 +82,5 @@ class LazyTensor(GenericLazyTensor):
 
     def lt_constructor(self, x=None, axis=None):
         return LazyTensor(x=x, axis=axis)
+
+    float_types = [float, np.float16, np.float32, np.float64]
