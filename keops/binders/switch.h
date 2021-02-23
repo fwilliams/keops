@@ -161,7 +161,7 @@ array_t_out launch_keops_out(int tag1D2D,
   keops_binders::check_nargs(nargs, keops_nminargs);
   short int deviceId_casted = cast_Device_Id(deviceId);
   
-  Sizes< array_t > SS(nargs, args);
+  Sizes< array_t > SS(nargs, args, nx, ny);
   // We do not want to allocate the output array here. Only difference to `launch_keops`
   //array_t_out result = (tagHostDevice == 0) ? allocate_result_array< array_t_out, __TYPE__ >(SS.shape_out, SS.nbatchdims)
   //                                          : allocate_result_array_gpu< array_t_out, __TYPE__ >(SS.shape_out, SS.nbatchdims, deviceId_casted);

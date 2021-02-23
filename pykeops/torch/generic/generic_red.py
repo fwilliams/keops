@@ -84,7 +84,7 @@ class GenredAutograd(torch.autograd.Function):
 
         # relying on the 'ctx.saved_variables' attribute is necessary  if you want to be able to differentiate the output
         #  of the backward once again. It helps pytorch to keep track of 'who is who'.
-        ctx.save_for_backward(*args, result)
+        ctx.save_for_backward(*args, out)
 
         return out
 
