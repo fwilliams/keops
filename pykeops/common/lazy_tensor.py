@@ -11,6 +11,15 @@ def same_or_one_test(*dims):
     return len(set(list(dims) + [1])) <= 2
 
 
+def is_scalar_and_equals(x, val):
+    # test wether the input x is a Python scalar and
+    # that its value equals val
+    if isinstance(x, (int, float, complex)) and not isinstance(x, bool):
+        return x == val
+    else:
+        return False
+
+
 class GenericLazyTensor:
     r"""Symbolic wrapper for NumPy arrays and PyTorch tensors. This is the abstract class,
     end user should use :class:`pykeops.numpy.LazyTensor` or :class:`pykeops.torch.LazyTensor`.
@@ -946,7 +955,7 @@ class GenericLazyTensor:
         ``x + y`` returns a :class:`LazyTensor` that encodes,
         symbolically, the addition of ``x`` and ``y``.
         """
-        if other == 0:
+        if is_scalar_and_equals(other, 0):
             return self
         else:
             return self.binary(other, "+", is_operator=True)
@@ -958,7 +967,7 @@ class GenericLazyTensor:
         ``x + y`` returns a :class:`LazyTensor` that encodes,
         symbolically, the addition of ``x`` and ``y``.
         """
-        if other == 0:
+        if is_scalar_and_equals(other, 0):
             return self
         else:
             return self.binary(other, "+", is_operator=True, rversion=True)
@@ -970,7 +979,7 @@ class GenericLazyTensor:
         ``x - y`` returns a :class:`LazyTensor` that encodes,
         symbolically, the subtraction of ``x`` and ``y``.
         """
-        if other == 0:
+        if is_scalar_and_equals(other, 0):
             return self
         else:
             return self.binary(other, "-", is_operator=True)
@@ -982,7 +991,7 @@ class GenericLazyTensor:
         ``x - y`` returns a :class:`LazyTensor` that encodes,
         symbolically, the subtraction of ``x`` and ``y``.
         """
-        if other == 0:
+        if is_scalar_and_equals(other, 0):
             return self.unary("Minus")
         else:
             return self.binary(other, "-", is_operator=True, rversion=True)
@@ -994,11 +1003,11 @@ class GenericLazyTensor:
         ``x * y`` returns a :class:`LazyTensor` that encodes, symbolically,
         the elementwise product of ``x`` and ``y``.
         """
-        if other == 0:
+        if is_scalar_and_equals(other, 0):
             return 0
-        elif other == 1:
+        elif is_scalar_and_equals(other, 1):
             return self
-        elif other == -1:
+        elif is_scalar_and_equals(other, -1):
             return self.unary("Minus")
         else:
             return self.binary(other, "*", is_operator=True)
@@ -1010,11 +1019,11 @@ class GenericLazyTensor:
         ``x * y`` returns a :class:`LazyTensor` that encodes, symbolically,
         the elementwise product of ``x`` and ``y``.
         """
-        if other == 0:
+        if is_scalar_and_equals(other, 0):
             return 0
-        elif other == 1:
+        elif is_scalar_and_equals(other, 1):
             return self
-        elif other == -1:
+        elif is_scalar_and_equals(other, -1):
             return self.unary("Minus")
         else:
             return self.binary(other, "*", is_operator=True, rversion=True)
@@ -1026,7 +1035,7 @@ class GenericLazyTensor:
         ``x / y`` returns a :class:`LazyTensor` that encodes, symbolically,
         the elementwise division of ``x`` by ``y``.
         """
-        if other == 1:
+        if is_scalar_and_equals(other, 1):
             return self
         else:
             return self.binary(other, "/", is_operator=True)
@@ -1038,9 +1047,9 @@ class GenericLazyTensor:
         ``x / y`` returns a :class:`LazyTensor` that encodes, symbolically,
         the elementwise division of ``x`` by ``y``.
         """
-        if other == 0:
+        if is_scalar_and_equals(other, 0):
             return 0
-        elif other == 1:
+        elif is_scalar_and_equals(other, 1):
             return self.unary("Inv")
         else:
             return self.binary(other, "/", is_operator=True, rversion=True)
@@ -1141,6 +1150,15 @@ class GenericLazyTensor:
         """
         return self.unary("Sin")
 
+    def asin(self):
+        r"""
+        Element-wise arcsine - a unary operation.
+
+        ``x.asin()`` returns a :class:`LazyTensor` that encodes, symbolically,
+        the element-wise arcsine of ``x``.
+        """
+        return self.unary("Asin")
+
     def acos(self):
         r"""
         Element-wise arccosine - a unary operation.
@@ -1149,6 +1167,15 @@ class GenericLazyTensor:
         the element-wise arccosine of ``x``.
         """
         return self.unary("Acos")
+
+    def atan(self):
+        r"""
+        Element-wise arctangent - a unary operation.
+
+        ``x.atan()`` returns a :class:`LazyTensor` that encodes, symbolically,
+        the element-wise arctangent of ``x``.
+        """
+        return self.unary("Atan")
 
     def sqrt(self):
         r"""

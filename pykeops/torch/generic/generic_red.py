@@ -4,8 +4,12 @@ from pykeops.common.get_options import get_tag_backend
 from pykeops.common.keops_io import LoadKeOps
 from pykeops.common.operations import preprocess, postprocess
 from pykeops.torch.half2_convert import preprocess_half2, postprocess_half2
-from pykeops.common.parse_type import get_type, get_sizes, complete_aliases
-from pykeops.common.parse_type import get_optional_flags
+from pykeops.common.parse_type import (
+    get_type,
+    get_sizes,
+    complete_aliases,
+    get_optional_flags,
+)
 from pykeops.common.utils import axis2cat
 from pykeops.torch import default_dtype, include_dirs
 
@@ -16,7 +20,21 @@ class GenredAutograd(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(ctx, formula, aliases, backend, dtype, device_id, ranges, optional_flags, rec_multVar_highdim, out, *args):
+    def forward(
+        ctx,
+        formula,
+        aliases,
+        backend,
+        dtype,
+        device_id,
+        ranges,
+        optional_flags,
+        rec_multVar_highdim,
+        nx,
+        ny,
+        out,
+        *args
+    ):
         # N.B. when rec_multVar_highdim option is set, it means that formula is of the form "sum(F*b)", where b is a variable
         # with large dimension. In this case we set compiler option MULT_VAR_HIGHDIM to allow for the use of the special "final chunk" computation
         # mode. However, this may not be also true for the gradients of the same formula. In fact only the gradient
@@ -26,7 +44,7 @@ class GenredAutograd(torch.autograd.Function):
         if rec_multVar_highdim is not None:
             optional_flags += ['-DMULT_VAR_HIGHDIM=1']
         myconv = LoadKeOps(
-            formula, aliases, dtype, "torch", optional_flags + include_dirs
+            formula, aliases, dtype, "torch", optional_flags, include_dirs
         ).import_module()
 
         # Context variables: save everything to compute the gradient:
@@ -38,6 +56,8 @@ class GenredAutograd(torch.autograd.Function):
         ctx.ranges = ranges
         ctx.rec_multVar_highdim = rec_multVar_highdim
         ctx.myconv = myconv
+        ctx.nx = nx
+        ctx.ny = ny
 
         tagCPUGPU, tag1D2D, tagHostDevice = get_tag_backend(backend, args)
 
@@ -54,15 +74,17 @@ class GenredAutograd(torch.autograd.Function):
         # N.B.: KeOps C++ expects contiguous integer arrays as ranges
         ranges = tuple(r.contiguous() for r in ranges)
         if out is None:
-            out = myconv.genred_pytorch(tagCPUGPU, tag1D2D, tagHostDevice, device_id, ranges, *args)
+            out = myconv.genred_pytorch(
+                tagCPUGPU, tag1D2D, tagHostDevice, device_id, ranges, nx, ny, *args,
+            )
         else:
-            out = myconv.genred_pytorch_out(tagCPUGPU, tag1D2D, tagHostDevice, device_id, ranges,
-                                            out, *args)
+            out = myconv.genred_pytorch_out(
+                tagCPUGPU, tag1D2D, tagHostDevice, device_id, ranges, nx, ny, out, *args,
+            )
 
-        # relying on the 'ctx.saved_variables' attribute is necessary
-        # if you want to be able to differentiate the output of the backward once again.
-        # It helps pytorch to keep track of 'who is who'.
-        ctx.save_for_backward(*args, out)
+        # relying on the 'ctx.saved_variables' attribute is necessary  if you want to be able to differentiate the output
+        #  of the backward once again. It helps pytorch to keep track of 'who is who'.
+        ctx.save_for_backward(*args, result)
 
         return out
 
@@ -76,6 +98,8 @@ class GenredAutograd(torch.autograd.Function):
         optional_flags = ctx.optional_flags
         device_id = ctx.device_id
         myconv = ctx.myconv
+        nx = ctx.nx
+        ny = ctx.ny
         args = ctx.saved_tensors[:-1]  # Unwrap the saved variables
         nargs = len(args)
         result = ctx.saved_tensors[-1].detach()
@@ -125,9 +149,11 @@ class GenredAutograd(torch.autograd.Function):
             zip(aliases, args)
         ):  # Run through the arguments
             # If the current gradient is to be discarded immediatly...
-            if not ctx.needs_input_grad[var_ind + 9]:  # because of (formula, aliases, backend, dtype, device_id, ranges, accuracy_flags, rec_multVar_highdim, out)
+            if not ctx.needs_input_grad[
+                var_ind + 11
+            ]:  # because of (formula, aliases, backend, dtype, device_id, ranges, accuracy_flags, rec_multVar_highdim, nx, ny, out)
                 grads.append(None)  # Don't waste time computing it.
-            else:  
+            else:
                 # Otherwise, the current gradient is really needed by the user. Adding new aliases is way too dangerous if we want to compute
                 # second derivatives, etc. So we make explicit references to Var<ind,dim,cat> instead.
                 # New here (Joan) : we still add the new variables to the list of "aliases" (without
@@ -167,7 +193,20 @@ class GenredAutograd(torch.autograd.Function):
                 ):  # we're referring to a parameter, so we'll have to sum both wrt 'i' and 'j'
                     # WARNING !! : here we rely on the implementation of DiffT in files in folder keops/core/formulas/reductions
                     # if tagI==cat of V is 2, then reduction is done wrt j, so we need to further sum output wrt i
-                    grad = genconv(formula_g, aliases_g, backend, dtype, device_id, ranges, optional_flags, rec_multVar_highdim, None, *args_g)
+                    grad = genconv(
+                        formula_g,
+                        aliases_g,
+                        backend,
+                        dtype,
+                        device_id,
+                        ranges,
+                        optional_flags,
+                        rec_multVar_highdim,
+                        nx,
+                        ny,
+                        None,  # out
+                        *args_g,
+                    )
                     # Then, sum 'grad' wrt 'i' :
                     # I think that '.sum''s backward introduces non-contiguous arrays,
                     # and is thus non-compatible with GenredAutograd: grad = grad.sum(0)
@@ -184,7 +223,20 @@ class GenredAutograd(torch.autograd.Function):
                     )
 
                 else:
-                    grad = genconv(formula_g, aliases_g, backend, dtype, device_id, ranges, optional_flags, rec_multVar_highdim, None, *args_g)
+                    grad = genconv(
+                        formula_g,
+                        aliases_g,
+                        backend,
+                        dtype,
+                        device_id,
+                        ranges,
+                        optional_flags,
+                        rec_multVar_highdim,
+                        nx,
+                        ny,
+                        None,  # out
+                        *args_g
+                    )
 
                     # N.B.: 'grad' is always a full [A, .., B, M, D] or [A, .., B, N, D] or [A, .., B, D] tensor,
                     #       whereas 'arg_ind' may have some broadcasted batched dimensions.
@@ -205,8 +257,9 @@ class GenredAutograd(torch.autograd.Function):
                     arg_ind.shape
                 )  # The gradient should have the same shape as the input!
                 grads.append(grad)
-        # Grads wrt. formula, aliases, backend, dtype, device_id, ranges, optional_flags, rec_multVar_highdim, out, *args
-        return (None, None, None, None, None, None, None, None, None, *grads)
+
+        # Grads wrt. formula, aliases, backend, dtype, device_id, ranges, optional_flags, rec_multVar_highdim, nx, ny, out, *args
+        return (None, None, None, None, None, None, None, None, None, None, None, *grads)
 
 
 class Genred:
@@ -508,6 +561,8 @@ class Genred:
             ranges,
             self.optional_flags,
             self.rec_multVar_highdim,
+            nx,
+            ny,
             out,
             *args
         )
