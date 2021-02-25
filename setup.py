@@ -128,6 +128,10 @@ setup(
             "keops/headers.cmake",
             "keops/keops_includes.h",
             "version",
+            "cmake_scripts/*",
+            "cmake_scripts/script_keops_formula/*",
+            "cmake_scripts/script_specific/*",
+            "cmake_scripts/script_template/*",
         ]
         + import_files(path.join("keops", "binders"))
         + import_files(path.join("keops", "core", "autodiff"))
