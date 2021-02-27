@@ -92,7 +92,7 @@
 #include "core/formulas/maths/TensorProd.h"
 #include "core/formulas/maths/VecMatMult.h"
 #include "core/formulas/maths/OneHot.h"
-
+#include "core/formulas/maths/Atan2.h"
 
 // import all operations on vector implementations
 #include "core/formulas/norms/Norm2.h"
