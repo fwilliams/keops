@@ -65,9 +65,7 @@ pybind11_files = [
     "pybind11/tools/setup_main.py.in",
 ]
 
-tao_seq_files = import_files("keops/lib/sequences/include/tao/seq/") + import_files(
-    "keops/lib/sequences/include/tao/seq/contrib/"
-)
+tao_seq_files = import_files("keops/lib/sequences/include/tao/seq/") #+ import_files("keops/lib/sequences/include/tao/seq/contrib/")
 
 setup(
     name="pykeops",
