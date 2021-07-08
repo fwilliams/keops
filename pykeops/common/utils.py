@@ -1,4 +1,3 @@
-import fcntl
 import functools
 import importlib.util
 import os
@@ -9,6 +8,12 @@ from pykeops import build_type, bin_folder
 
 c_type = dict(float16="half2", float32="float", float64="double")
 
+if os.name == 'nt':
+    import msvcrt
+    DEFAULT_LOCK_OP = msvcrt.LK_LOCK
+else:
+    import fcntl
+    DEFAULT_LOCK_OP = fcntl.LOCK_EX
 
 def module_exists(dllname):
     spec = importlib.util.find_spec(dllname)
@@ -27,6 +32,7 @@ def create_name(formula, aliases, dtype, lang):
     dll_name = ",".join(aliases + [formula]) + "_" + dtype
     dll_name = "libKeOps" + lang + sha256(dll_name.encode("utf-8")).hexdigest()[:10]
     return dll_name
+    
 
 
 def axis2cat(axis):
@@ -56,16 +62,22 @@ def cat2axis(cat):
 
 
 class FileLock:
-    def __init__(self, fd, op=fcntl.LOCK_EX):
+    def __init__(self, fd, op=DEFAULT_LOCK_OP):
         self.fd = fd
         self.op = op
 
     def __enter__(self):
-        fcntl.flock(self.fd, self.op)
+        if os.name == 'nt':            
+            msvcrt.locking(self.fd, self.op, 1)
+        else:
+            fcntl.flock(self.fd, self.op)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        fcntl.flock(self.fd, fcntl.LOCK_UN)
+        if os.name == 'nt':
+            msvcrt.locking(self.fd, msvcrt.LK_UNLK, 1)
+        else:
+            fcntl.flock(self.fd, fcntl.LOCK_UN)
 
 
 def create_and_lock_build_folder():
